@@ -1,0 +1,22 @@
+{
+  "note": "예시 시세예요. 실제 서비스는 국토교통부 실거래가 API를 매달 배치로 받아 동네별 중앙값으로 바꿔요. 단위: 만원",
+  "sample": true,
+  "regions": [
+    { "id": "seongnam_sujeong", "name": "성남 수정구", "lat": 37.4500, "lng": 127.1460, "capital": true, "jeonse": 30000, "buy": 58000, "monthly": { "deposit": 4000, "rent": 120 } },
+    { "id": "bundang_jeongja", "name": "분당 정자동", "lat": 37.3660, "lng": 127.1080, "capital": true, "jeonse": 52000, "buy": 110000, "monthly": { "deposit": 10000, "rent": 180 } },
+    { "id": "seocho_yangjae", "name": "서초 양재동", "lat": 37.4840, "lng": 127.0350, "capital": true, "jeonse": 65000, "buy": 150000, "monthly": { "deposit": 10000, "rent": 220 } },
+    { "id": "gangnam_yeoksam", "name": "강남 역삼동", "lat": 37.5000, "lng": 127.0360, "capital": true, "jeonse": 75000, "buy": 180000, "monthly": { "deposit": 10000, "rent": 250 } },
+    { "id": "songpa_munjeong", "name": "송파 문정동", "lat": 37.4860, "lng": 127.1220, "capital": true, "jeonse": 55000, "buy": 120000, "monthly": { "deposit": 5000, "rent": 190 } },
+    { "id": "hanam_wirye", "name": "하남 위례", "lat": 37.4790, "lng": 127.1440, "capital": true, "jeonse": 45000, "buy": 90000, "monthly": { "deposit": 5000, "rent": 160 } },
+    { "id": "yongin_suji", "name": "용인 수지", "lat": 37.3220, "lng": 127.0970, "capital": true, "jeonse": 38000, "buy": 70000, "monthly": { "deposit": 3000, "rent": 130 } },
+    { "id": "gwangju_gg", "name": "경기 광주", "lat": 37.4100, "lng": 127.2570, "capital": true, "jeonse": 26000, "buy": 42000, "monthly": { "deposit": 3000, "rent": 90 } },
+    { "id": "gwacheon", "name": "과천", "lat": 37.4290, "lng": 126.9880, "capital": true, "jeonse": 60000, "buy": 140000, "monthly": { "deposit": 10000, "rent": 200 } },
+    { "id": "suwon_yeongtong", "name": "수원 영통", "lat": 37.2590, "lng": 127.0470, "capital": true, "jeonse": 28000, "buy": 50000, "monthly": { "deposit": 2000, "rent": 90 } },
+    { "id": "gwanak_bongcheon", "name": "관악 봉천동", "lat": 37.4820, "lng": 126.9530, "capital": true, "jeonse": 33000, "buy": 70000, "monthly": { "deposit": 2000, "rent": 100 } },
+    { "id": "seongdong_seongsu", "name": "성동 성수동", "lat": 37.5440, "lng": 127.0560, "capital": true, "jeonse": 60000, "buy": 140000, "monthly": { "deposit": 5000, "rent": 200 } },
+    { "id": "yeongdeungpo_singil", "name": "영등포 신길동", "lat": 37.5070, "lng": 126.9150, "capital": true, "jeonse": 40000, "buy": 90000, "monthly": { "deposit": 3000, "rent": 140 } },
+    { "id": "mapo_gongdeok", "name": "마포 공덕동", "lat": 37.5440, "lng": 126.9520, "capital": true, "jeonse": 55000, "buy": 130000, "monthly": { "deposit": 5000, "rent": 190 } },
+    { "id": "guro_gocheok", "name": "구로 고척동", "lat": 37.4950, "lng": 126.8670, "capital": true, "jeonse": 30000, "buy": 65000, "monthly": { "deposit": 2000, "rent": 100 } },
+    { "id": "goyang_ilsan", "name": "고양 일산", "lat": 37.6580, "lng": 126.7700, "capital": true, "jeonse": 30000, "buy": 60000, "monthly": { "deposit": 2000, "rent": 100 } }
+  ]
+}
