@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Marriage, Place, PlanResult, Tenure } from './types';
 
 export interface PersonState { label: string; color: string; tint: string; text: string; company: Place | null; maxCommute: number; income: number }
@@ -21,7 +22,7 @@ interface State {
 
 const now = new Date();
 
-export const useStore = create<State>((set, get) => ({
+export const useStore = create<State>()(persist((set, get) => ({
   marriage: 'soon',
   moveIn: { year: now.getFullYear() + 1, month: 9 },
   people: [
@@ -51,4 +52,16 @@ export const useStore = create<State>((set, get) => ({
       existing_loan_monthly: s.hasLoan ? s.loanMonthly : 0,
     };
   },
+}), {
+  // 새로고침·개발 서버 재시작에도 입력값이 남도록 탭 단위로 저장해요 (탭을 닫으면 지워져요)
+  name: 'homepass-input',
+  storage: createJSONStorage(() => sessionStorage),
+  partialize: (s) => ({ marriage: s.marriage, moveIn: s.moveIn, people: s.people, saved: s.saved, hasLoan: s.hasLoan, loanMonthly: s.loanMonthly, regionId: s.regionId, tenure: s.tenure }),
 }));
+
+/** 결과를 계산하기 전에 빠진 입력이 있으면 돌아갈 화면을 알려줘요. */
+export function missingStep(s: Pick<State, 'people' | 'hasLoan' | 'loanMonthly'>): string | null {
+  if (s.people.some((p) => !p.company)) return '/where';
+  if (s.people.some((p) => !p.income) || (s.hasLoan && !s.loanMonthly)) return '/money';
+  return null;
+}

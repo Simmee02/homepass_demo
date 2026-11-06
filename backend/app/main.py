@@ -1,8 +1,18 @@
 from __future__ import annotations
 
 import os
+from typing import Optional
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parents[1] / ".env")
+except ImportError:
+    pass
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -20,25 +30,53 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def on_validation_error(request: Request, exc: RequestValidationError):
+    errs = [{"field": ".".join(str(x) for x in e["loc"][1:]), "msg": e["msg"], "input": e.get("input")} for e in exc.errors()]
+    print("[422]", request.url.path, errs, flush=True)
+    msg = ", ".join(f"{e['field']}: {e['msg']}" for e in errs)
+    return JSONResponse(status_code=422, content={"message": msg, "errors": errs})
+
+
 @app.get("/api/health")
 def health(repo: Repo = Depends(get_repo)):
-    return {"ok": True, "storage": "supabase" if repo.remote else "local"}
+    meta = repo.regions_meta()
+    return {"ok": True, "storage": "supabase" if repo.remote else "local", "prices": "sample" if meta.get("sample", True) else "real",
+            "kakao": bool(os.getenv("KAKAO_REST_KEY")), "odsay": bool(os.getenv("ODSAY_API_KEY")),
+            "llm": bool(os.getenv("ANTHROPIC_API_KEY"))}
 
 
 @app.get("/api/companies")
 def companies(q: str = Query("", max_length=50), repo: Repo = Depends(get_repo)):
-    """회사 검색. 운영에서는 카카오 로컬 API(KAKAO_REST_KEY)로 바꿔요."""
-    places = repo.companies()
+    """회사 검색: 카카오(KAKAO_REST_KEY) → 오픈스트리트맵(키 불필요) → 예시 업무지구 순으로 시도해요."""
     q = q.strip()
+    if q and os.getenv("KAKAO_REST_KEY"):
+        from collect import kakao
+        try:
+            return {"places": kakao.keyword(q), "source": "kakao"}
+        except Exception:
+            pass
+    if len(q) >= 2 and os.getenv("OSM_SEARCH", "1") == "1":
+        from collect import osm
+        try:
+            found = osm.search(q)
+            if found:
+                return {"places": found, "source": "osm"}
+        except Exception:
+            pass
+    places = repo.companies()
     if q:
         places = [p for p in places if q in p["name"] or q in p["address"]]
-    return {"places": places[:10]}
+    return {"places": places[:10], "source": "sample"}
 
 
 @app.post("/api/plan", response_model=PlanResult)
 def plan(inp: PlanInput, repo: Repo = Depends(get_repo)):
     products, eff = repo.loan_products()
-    return make_plan(inp.model_dump(), repo.regions(), products, eff)
+    out = make_plan(inp.model_dump(), repo.regions(), products, eff)
+    meta = repo.regions_meta()
+    out["price_source"] = {k: meta.get(k) for k in ("source", "period", "collected", "sample", "note")}
+    return out
 
 
 @app.get("/api/loan-products")
@@ -59,7 +97,7 @@ def explain_option(body: ExplainIn):
 
 class SaveIn(BaseModel):
     input: dict
-    result: dict | None = None
+    result: Optional[dict] = None
 
 
 @app.post("/api/plans")

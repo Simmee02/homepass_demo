@@ -4,7 +4,10 @@ const BASE = import.meta.env.VITE_API_BASE ?? '';
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, { headers: { 'Content-Type': 'application/json' }, ...init });
-  if (!res.ok) throw new Error(`요청 실패 (${res.status})`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(`요청 실패 (${res.status})${body?.message ? ` · ${body.message}` : ''}`);
+  }
   return res.json() as Promise<T>;
 }
 

@@ -57,6 +57,8 @@ class LoanResult(BaseModel):
     reason: str
     preferential: list[dict] = []
     apply: dict
+    sources: list[dict] = []
+    verified: bool = False
 
 
 class FundingRow(BaseModel):
@@ -88,6 +90,7 @@ class RegionResult(BaseModel):
     lat: float
     lng: float
     commute: dict[str, int]
+    commute_provider: str = "estimate"
     options: dict[str, Option]
 
 
@@ -99,3 +102,4 @@ class PlanResult(BaseModel):
     regions: list[RegionResult]
     rules_effective_date: str
     notes: list[str]
+    price_source: dict = {}

@@ -60,6 +60,8 @@ export default function LoanDetail() {
             </div>
           </section>
         )}
+        {loan.sources.length > 0 && <p className="disclaimer">기준 출처: {loan.sources.map((src, i) => <span key={src.url}>{i ? ' · ' : ''}<a href={src.url} target="_blank" rel="noreferrer">{src.title}</a> ({src.checked} 확인)</span>)}</p>}
+        {!loan.verified && <p className="disclaimer" style={{ color: 'var(--mid)' }}>이 상품의 한도·금리는 아직 공식 원문으로 확인하지 못한 값이에요.</p>}
         <p className="disclaimer">공개 기준으로 계산한 예상치예요. 최종 한도·금리는 {loan.org}와 취급 은행 심사로 정해져요.</p>
       </main>
       <div className="spacer" />
