@@ -8,3 +8,5 @@ __pycache__/
 backend/raw/*.csv
 backend/app/data/geocode_cache.json
 .homepass_sync.tgz
+frontend/.env.local
+frontend/.env

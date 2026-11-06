@@ -35,3 +35,15 @@ def keyword(query: str, size: int = 10) -> list[dict]:
          "lat": float(d["y"]), "lng": float(d["x"])}
         for d in r.json().get("documents", [])
     ]
+
+
+def reverse(lat: float, lng: float) -> dict | None:
+    r = httpx.get("https://dapi.kakao.com/v2/local/geo/coord2address.json", params={"x": lng, "y": lat},
+                  headers=_headers(), timeout=10)
+    r.raise_for_status()
+    docs = r.json().get("documents", [])
+    if not docs:
+        return None
+    road, addr = docs[0].get("road_address") or {}, docs[0].get("address") or {}
+    return {"name": road.get("building_name") or "", "address": road.get("address_name") or addr.get("address_name", ""),
+            "lat": lat, "lng": lng}

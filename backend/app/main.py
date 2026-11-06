@@ -42,7 +42,7 @@ async def on_validation_error(request: Request, exc: RequestValidationError):
 def health(repo: Repo = Depends(get_repo)):
     meta = repo.regions_meta()
     return {"ok": True, "storage": "supabase" if repo.remote else "local", "prices": "sample" if meta.get("sample", True) else "real",
-            "kakao": bool(os.getenv("KAKAO_REST_KEY")), "odsay": bool(os.getenv("ODSAY_API_KEY")),
+            "kakao": bool(os.getenv("KAKAO_REST_KEY")), "mapbox": bool(os.getenv("MAPBOX_TOKEN")), "odsay": bool(os.getenv("ODSAY_API_KEY")),
             "llm": bool(os.getenv("ANTHROPIC_API_KEY"))}
 
 
@@ -54,6 +54,14 @@ def companies(q: str = Query("", max_length=50), repo: Repo = Depends(get_repo))
         from collect import kakao
         try:
             return {"places": kakao.keyword(q), "source": "kakao"}
+        except Exception:
+            pass
+    if len(q) >= 2 and os.getenv("MAPBOX_TOKEN"):
+        from collect import mapbox
+        try:
+            found = mapbox.search(q)
+            if found:
+                return {"places": found, "source": "mapbox"}
         except Exception:
             pass
     if len(q) >= 2 and os.getenv("OSM_SEARCH", "1") == "1":
@@ -68,6 +76,23 @@ def companies(q: str = Query("", max_length=50), repo: Repo = Depends(get_repo))
     if q:
         places = [p for p in places if q in p["name"] or q in p["address"]]
     return {"places": places[:10], "source": "sample"}
+
+
+@app.get("/api/reverse")
+def reverse(lat: float = Query(..., ge=33, le=39), lng: float = Query(..., ge=124, le=132)):
+    """지도에서 찍은 좌표 → 건물명·주소. 카카오 → 오픈스트리트맵 → 좌표만 순으로 시도해요."""
+    order = (("kakao",) if os.getenv("KAKAO_REST_KEY") else ()) + (("mapbox",) if os.getenv("MAPBOX_TOKEN") else ()) + ("osm",)
+    for mod in order:
+        try:
+            m = __import__(f"collect.{mod}", fromlist=["reverse"])
+            found = m.reverse(lat, lng)
+            if found:
+                if not found["name"]:
+                    found["name"] = "지도에서 고른 위치"
+                return {**found, "source": mod}
+        except Exception:
+            continue
+    return {"name": "지도에서 고른 위치", "address": f"{lat:.5f}, {lng:.5f}", "lat": lat, "lng": lng, "source": "coords"}
 
 
 @app.post("/api/plan", response_model=PlanResult)

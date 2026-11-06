@@ -117,3 +117,32 @@ def test_companies_falls_back_to_osm_then_sample(monkeypatch):
         raise RuntimeError("offline")
     monkeypatch.setattr(osm, "search", boom)
     assert c.get("/api/companies", params={"q": "판교"}).json()["source"] == "sample"
+
+
+def test_reverse_falls_back_to_coords(monkeypatch):
+    from fastapi.testclient import TestClient
+    from collect import osm
+    from app.main import app
+    def boom(*a, **k):
+        raise RuntimeError("offline")
+    monkeypatch.setattr(osm, "reverse", boom)
+    r = TestClient(app).get("/api/reverse", params={"lat": 37.5446, "lng": 127.0559}).json()
+    assert r["source"] == "coords" and r["name"] == "지도에서 고른 위치"
+    monkeypatch.setattr(osm, "reverse", lambda lat, lng: {"name": "", "address": "서울 성동구 성수동2가 아차산로 100", "lat": lat, "lng": lng})
+    r = TestClient(app).get("/api/reverse", params={"lat": 37.5446, "lng": 127.0559}).json()
+    assert r["source"] == "osm" and r["address"].startswith("서울 성동구")
+
+
+def test_mapbox_parse(monkeypatch):
+    from collect import mapbox
+    feat = {"geometry": {"coordinates": [127.0559, 37.5446]},
+            "properties": {"name": "무신사 성수", "full_address": "서울특별시 성동구 성수동2가 아차산로 100", "feature_type": "poi"}}
+    area = {"geometry": {"coordinates": [127.05, 37.54]}, "properties": {"name": "성수동", "feature_type": "neighborhood"}}
+
+    class R:
+        def raise_for_status(self): pass
+        def json(self): return {"features": [area, feat]}
+    monkeypatch.setenv("MAPBOX_TOKEN", "pk.test")
+    monkeypatch.setattr(mapbox.httpx, "get", lambda *a, **k: R())
+    out = mapbox.search("무신사")
+    assert out[0]["name"] == "무신사 성수" and out[0]["address"].startswith("서울특별시 성동구") and out[-1]["kind"] == "area"

@@ -167,3 +167,6 @@ a { color: var(--main-text); text-decoration: none; }
 .leaflet-control-zoom a { border-radius: 4px !important; }
 .area-tag { font-style: normal; font-size: 11px; font-weight: 700; color: var(--mute); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: 1px; }
 .search .result { background: #fff; border: 1px solid var(--hair); }
+.leaflet-control-attribution { font-size: 10px !important; background: rgba(255,255,255,.6) !important; padding: 0 4px !important; }
+.leaflet-control-attribution a { color: var(--mute) !important; }
+.mapbox-logo { display: block; width: 88px; height: 23px; background-repeat: no-repeat; background-size: contain; margin: 0 0 4px 6px !important; }
