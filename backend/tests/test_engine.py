@@ -97,7 +97,12 @@ def test_plan_end_to_end():
     assert j["need_total"] == 2000 and j["need_monthly"] == 200
 
 
-def test_api():
+def test_api(monkeypatch):
+    # .env에 Supabase 키가 있어도 테스트는 로컬 JSON으로 돌려요
+    from app.repo import get_repo
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_KEY", raising=False)
+    get_repo.cache_clear()
     c = TestClient(app)
     assert c.get("/api/health").json()["ok"]
     r = c.post("/api/plan", json=SAMPLE)

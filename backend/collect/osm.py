@@ -61,3 +61,19 @@ def search(query: str, limit: int = 8, client: httpx.Client | None = None) -> li
 def geocode(query: str, client: httpx.Client | None = None) -> tuple[float, float] | None:
     docs = _get({"q": query, "limit": 1}, client)
     return (float(docs[0]["lat"]), float(docs[0]["lon"])) if docs else None
+
+
+def reverse(lat: float, lng: float, client: httpx.Client | None = None) -> dict | None:
+    """좌표 → 건물명·주소 (지도에서 직접 찍을 때)."""
+    _wait()
+    c = client or httpx
+    r = c.get("https://nominatim.openstreetmap.org/reverse",
+              params={"format": "jsonv2", "lat": lat, "lon": lng, "zoom": 18, "addressdetails": 1, "accept-language": "ko"},
+              headers={"User-Agent": UA}, timeout=10)
+    r.raise_for_status()
+    d = r.json()
+    if not d or "error" in d:
+        return None
+    a = d.get("address") or {}
+    name = d.get("name") or a.get("building") or a.get("office") or a.get("amenity") or ""
+    return {"name": name, "address": _addr(d), "lat": lat, "lng": lng}

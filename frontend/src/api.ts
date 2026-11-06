@@ -13,6 +13,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   companies: (q: string) => req<{ places: Place[] }>(`/api/companies?q=${encodeURIComponent(q)}`),
+  reverse: (lat: number, lng: number) => req<Place>(`/api/reverse?lat=${lat}&lng=${lng}`),
   plan: (body: unknown) => req<PlanResult>('/api/plan', { method: 'POST', body: JSON.stringify(body) }),
   explain: (region: string, option: Option) =>
     req<{ text: string; source: 'llm' | 'template' }>('/api/explain', { method: 'POST', body: JSON.stringify({ region, option }) }),

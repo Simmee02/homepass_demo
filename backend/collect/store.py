@@ -23,7 +23,7 @@ class Geocoder:
 
     def __init__(self) -> None:
         self.cache: dict = json.loads(GEO_CACHE.read_text(encoding="utf-8")) if GEO_CACHE.exists() else {}
-        self.provider = "kakao" if os.getenv("KAKAO_REST_KEY") else "osm"
+        self.provider = "kakao" if os.getenv("KAKAO_REST_KEY") else ("mapbox" if os.getenv("MAPBOX_TOKEN") else "osm")
 
     def __call__(self, query: str) -> tuple[float, float] | None:
         if query in self.cache:
@@ -32,6 +32,8 @@ class Geocoder:
         try:
             if self.provider == "kakao":
                 from .kakao import geocode
+            elif self.provider == "mapbox":
+                from .mapbox import geocode
             else:
                 from .osm import geocode
             v = geocode(query)

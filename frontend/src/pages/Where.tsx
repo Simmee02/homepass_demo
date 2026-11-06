@@ -47,7 +47,29 @@ function CompanySearch({ onPick }: { onPick: (p: Place) => void }) {
     setRecent(next);
   };
 
+  const [onMap, setOnMap] = useState(false);
+  const [picked, setPicked] = useState<Place | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const mapPins = useMemo<MapPin[]>(() => (picked ? [{ id: 'pick', lat: picked.lat, lng: picked.lng, color: '#1E2230', label: picked.name }] : []), [picked]);
+
   const query = q.trim();
+  if (onMap) {
+    return (
+      <div className="search">
+        <span className="hint">지도를 확대해서 회사 건물을 눌러 주세요</span>
+        <RealMap height={240} pins={mapPins} onMapClick={(lat, lng) => {
+          setResolving(true);
+          setPicked({ name: '주소 찾는 중…', address: '', lat, lng });
+          api.reverse(lat, lng).then(setPicked).catch(() => setPicked({ name: '지도에서 고른 위치', address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng })).finally(() => setResolving(false));
+        }} />
+        {picked && <div className="result" style={{ cursor: 'default' }}><b>{picked.name}</b><span>{picked.address}</span></div>}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="btn ghost" style={{ flex: 1, background: 'var(--bg)', color: 'var(--sub)' }} onClick={() => { setOnMap(false); setPicked(null); }}>검색으로 돌아가기</button>
+          <button className="btn ghost" style={{ flex: 1 }} disabled={!picked || resolving} onClick={() => picked && pick(picked)}>이 위치로 정하기</button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="search">
       <input autoFocus placeholder="회사 이름이나 주소로 검색" value={q} onFocus={() => setRecent(readRecent())} onChange={(e) => setQ(e.target.value)} />
@@ -56,10 +78,12 @@ function CompanySearch({ onPick }: { onPick: (p: Place) => void }) {
           {list.slice(0, 5).map((p) => (
             <button key={`${p.name}-${p.lat}`} className="result" onClick={() => pick(p)}><b>{p.name}{p.kind === 'area' && <em className="area-tag">동네</em>}</b><span>{p.address}</span></button>
           ))}
-          {!loading && list.length === 0 && <span className="hint" style={{ padding: '4px 2px' }}>검색 결과가 없어요. 회사 이름이나 도로명 주소로 다시 검색해 보세요.</span>}
+          {!loading && list.length === 0 && <span className="hint" style={{ padding: '4px 2px' }}>검색 결과가 없어요. 도로명 주소로 다시 검색하거나 지도에서 직접 골라 주세요.</span>}
           {loading && <span className="hint" style={{ padding: '4px 2px' }}>찾는 중…</span>}
         </>
-      ) : recent.length > 0 && (
+      ) : null}
+      <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setOnMap(true)}>찾는 회사가 없나요? 지도에서 직접 고르기 ›</button>
+      {query.length < 2 && recent.length > 0 && (
         <div className="recent">
           <div className="recent-head"><span>최근 검색</span><button onClick={() => { writeRecent([]); setRecent([]); }}>전체 삭제</button></div>
           {recent.map((p) => (

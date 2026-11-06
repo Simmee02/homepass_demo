@@ -9,7 +9,7 @@
 
 실행:
   cd backend
-  python -m collect.prices --months 6               # 기본: 전용 49~85㎡, 최근 6개월
+  python -m collect.prices                          # 기본: 수도권(서울·경기·인천) 전용 49~85㎡, 최근 3개월
   python -m collect.prices --months 3 --only 41131 11650   # 일부 시군구만
   python -m collect.prices --supabase               # Supabase regions 테이블에도 반영
 """
@@ -148,7 +148,7 @@ def fill_missing(dongs: dict[str, dict]) -> dict[str, dict]:
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--months", type=int, default=6)
+    ap.add_argument("--months", type=int, default=3)
     ap.add_argument("--only", nargs="*", help="LAWD_CD 일부만")
     ap.add_argument("--min-area", type=float, default=49)
     ap.add_argument("--max-area", type=float, default=85)
@@ -171,10 +171,17 @@ def main(argv: list[str] | None = None) -> None:
     with httpx.Client(timeout=30) as c:
         for lawd, sido, sgg in targets:
             trades, rents = [], []
-            for ym in months:
-                trades += fetch_month(c, TRADE_URL, key, lawd, ym)
-                rents += fetch_month(c, RENT_URL, key, lawd, ym)
-                time.sleep(0.1)
+            try:
+                for ym in months:
+                    trades += fetch_month(c, TRADE_URL, key, lawd, ym)
+                    rents += fetch_month(c, RENT_URL, key, lawd, ym)
+                    time.sleep(0.1)
+            except Exception as e:  # noqa: BLE001  한 지역이 실패해도 나머지는 계속 받아요
+                print(f"{sido} {sgg}: 실패 — {e}", flush=True)
+                continue
+            if not trades and not rents:
+                print(f"{sido} {sgg}: 거래 0건 (법정동코드 {lawd} 확인 필요)", flush=True)
+                continue
             dongs = fill_missing(aggregate(trades, rents, (args.min_area, args.max_area)))
             for umd, d in dongs.items():
                 r = make_region(lawd, sido, sgg, umd, d, geo)
