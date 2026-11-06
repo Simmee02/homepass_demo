@@ -43,7 +43,7 @@ export default function Money() {
           <MoneyField label={people[1].label} value={people[1].income} on={focus === 'B'} onFocus={() => setFocus('B')} onChange={(v) => put('B', v)} />
         </section>
         <section className="q">
-          <div className="q-head"><h2>주거 자금으로 모아둔 돈은요?</h2><span className="hint">부모님 지원 포함</span></div>
+          <h2>주거 자금으로 모아둔 돈은요?</h2>
           <MoneyField label="주거 자금" value={saved} on={focus === 'saved'} onFocus={() => setFocus('saved')} onChange={(v) => put('saved', v)} />
           <div className="quick">
             {[100, 500, 1000].map((v) => <button key={v} onClick={() => put(focus, get(focus) + v)}>+{v.toLocaleString('ko-KR')}</button>)}
@@ -51,7 +51,7 @@ export default function Money() {
           </div>
         </section>
         <section className="q">
-          <div className="q-head"><h2>갚고 있는 대출이 있나요?</h2><span className="hint">학자금·신용·할부 포함</span></div>
+          <h2>갚고 있는 대출이 있나요?</h2>
           <div className="chips" style={{ gridTemplateColumns: '1fr 1fr' }}>
             <button className={`chip ${!hasLoan ? 'on' : ''}`} style={{ height: 40 }} onClick={() => set({ hasLoan: false, result: null })}>없어요</button>
             <button className={`chip ${hasLoan ? 'on' : ''}`} style={{ height: 40 }} onClick={() => { set({ hasLoan: true, result: null }); setFocus('loan'); }}>있어요</button>
@@ -63,7 +63,7 @@ export default function Money() {
         </section>
       </main>
       <div className="spacer" />
-      <Cta onClick={() => { set({ result: null }); nav('/result'); }} disabled={!ready}>우리 결과 보기</Cta>
+      <Cta onClick={() => { set({ result: null }); nav('/result'); }} disabled={!ready}>결과 보기</Cta>
     </div>
   );
 }

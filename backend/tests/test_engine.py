@@ -44,7 +44,7 @@ def test_months():
 
 
 def test_commute_estimate():
-    assert 15 <= estimate_minutes(37.45, 127.146, PANGYO["lat"], PANGYO["lng"]) <= 25
+    assert 20 <= estimate_minutes(37.45, 127.146, PANGYO["lat"], PANGYO["lng"]) <= 35  # 신흥동→판교 실제 약 30분
 
 
 def test_beotimmok_income_over():
@@ -53,10 +53,26 @@ def test_beotimmok_income_over():
     assert "300만 초과" in r["reason"]
 
 
-def test_didimdol_conditional_before_marriage():
-    r = evaluate(P["didimdol_newlywed"], ctx(price=42000))
+def test_didimdol_conditional_when_marriage_later():
+    r = evaluate(P["didimdol_newlywed"], ctx(price=42000, marriage="year"))
     assert r["status"] == "conditional"
-    assert r["amount"] == 32000  # 한도 3.2억이 LTV·소득 한도보다 작음
+    assert r["amount"] == 29400  # 수도권 LTV 70% (4.2억 × 0.7)
+
+
+def test_didimdol_ok_when_marrying_within_3_months():
+    assert evaluate(P["didimdol_newlywed"], ctx(price=42000))["status"] == "ok"
+
+
+def test_bogeumjari_single_income_rule():
+    # 합산 9,000만 > 8,500만이지만 한 분이 7,000만 이하 → 2026.10.19 개선안으로 가능
+    r = evaluate(P["bogeumjari"], ctx(combined_income=9000, incomes=(6500, 2500), price=50000))
+    assert r["status"] == "ok"
+    assert r["checks"][0]["label"] == "소득 (1인 기준)"
+
+
+def test_beotimmok_rate_table():
+    r = evaluate(P["beotimmok_newlywed"], ctx(combined_income=5000, price=12000))
+    assert r["rate_label"] == "연 2.8%"
 
 
 def test_didimdol_ok_after_marriage():
@@ -90,3 +106,9 @@ def test_api():
     assert c.get("/api/companies", params={"q": "판교"}).json()["places"]
     sid = c.post("/api/plans", json={"input": SAMPLE}).json()["id"]
     assert c.get(f"/api/plans/{sid}").status_code == 200
+
+
+def test_reach_matches_estimate():
+    from app.engine.commute import reach_km
+    assert 11 < reach_km(45) < 13      # 45분 ≈ 직선 12km
+    assert 6 < reach_km(30) < 7.5

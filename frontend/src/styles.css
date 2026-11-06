@@ -157,3 +157,13 @@ a { color: var(--main-text); text-decoration: none; }
 .ratio { display: flex; height: 10px; border-radius: var(--r-sm); overflow: hidden; }
 .loading { padding: 60px 24px; text-align: center; color: var(--sub); }
 .error { margin: 12px 0 0; font-size: 13px; color: #b42318; }
+.recent { display: flex; flex-direction: column; }
+.recent-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 2px; font-size: 12px; color: var(--mute); }
+.recent-head button { background: none; border: 0; font-size: 12px; color: var(--mute); padding: 0; }
+.recent-item { display: flex; align-items: center; border-top: 1px solid var(--hair); }
+.recent-pick { flex: 1; display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 10px 2px; text-align: left; min-width: 0; }
+.recent-pick span { min-width: 0; } .recent-pick b { display: block; font-size: 14px; } .recent-pick small { display: block; font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-del { width: 32px; height: 32px; background: none; border: 0; color: var(--mute); font-size: 18px; }
+.leaflet-control-zoom a { border-radius: 4px !important; }
+.area-tag { font-style: normal; font-size: 11px; font-weight: 700; color: var(--mute); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: 1px; }
+.search .result { background: #fff; border: 1px solid var(--hair); }

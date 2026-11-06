@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { BackIcon, Chevron, Mascot } from '../components/ui';
+import RealMap from '../components/RealMap';
 import { GRADE_CLASS, TENURE_LABEL, won } from '../format';
-import { useStore } from '../store';
+import { missingStep, useStore } from '../store';
 import type { Tenure } from '../types';
 
 const ROW_COLOR = { loan: 'var(--main)', saved: 'var(--teal)', gap: 'var(--yellow)' } as const;
@@ -16,7 +17,9 @@ export default function Result() {
   const [explain, setExplain] = useState<{ text: string; source: string } | null>(null);
   const [explaining, setExplaining] = useState(false);
 
+  const missing = missingStep(s);
   useEffect(() => {
+    if (missing) { nav(missing, { replace: true }); return; }
     if (result) return;
     setError('');
     api.plan(s.planInput())
@@ -41,7 +44,7 @@ export default function Result() {
     <header className="top" style={{ paddingBottom: 22 }}>
       <div className="nav" style={{ justifyContent: 'space-between', marginRight: -10 }}>
         <button className="icon-btn" aria-label="이전" onClick={() => nav('/money')}><BackIcon /></button>
-        <span style={{ fontSize: 12, opacity: 0.85 }}>{result.rules_effective_date.slice(0, 7).replace('-', '.')} 기준 · 예시 시세</span>
+        <span style={{ fontSize: 12, opacity: 0.85 }}>대출 {result.rules_effective_date.slice(0, 7).replace('-', '.')} 기준 · {result.price_source.sample === false ? `실거래가 ${result.price_source.period ?? ''}` : '예시 시세'}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Mascot pose="party" size={64} />
@@ -70,11 +73,16 @@ export default function Result() {
 
       <section className="sec">
         <h2>어느 동네부터 볼까요?</h2>
+        <RealMap height={240} onPinClick={(id) => set({ regionId: id })}
+          pins={[
+            ...people.filter((p) => p.company).map((p) => ({ id: `co-${p.label}`, lat: p.company!.lat, lng: p.company!.lng, color: p.color })),
+            ...result.regions.map((r) => ({ id: r.id, lat: r.lat, lng: r.lng, color: r.id === region.id ? '#1E2230' : '#8A90A0', label: r.id === region.id ? r.name : undefined, selected: r.id === region.id })),
+          ]} />
         <div className="regions">
           {result.regions.map((r) => (
             <button key={r.id} className={`region ${r.id === region.id ? 'on' : ''}`} onClick={() => set({ regionId: r.id })}>
               <b style={{ color: r.id === region.id ? 'var(--ink)' : 'var(--sub)' }}>{r.name}</b>
-              <span>A {r.commute.A}분 · B {r.commute.B}분</span>
+              <span>A {r.commute.A}분 · B {r.commute.B}분{r.commute_provider === 'estimate' ? ' (추정)' : ''}</span>
             </button>
           ))}
         </div>

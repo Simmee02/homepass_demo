@@ -1,0 +1,10 @@
+node_modules/
+dist/
+__pycache__/
+.venv/
+.env
+.pytest_cache/
+
+backend/raw/*.csv
+backend/app/data/geocode_cache.json
+.homepass_sync.tgz

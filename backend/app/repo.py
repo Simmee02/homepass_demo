@@ -27,7 +27,10 @@ class Repo:
         return bool(self.url and self.key)
 
     def _headers(self) -> dict:
-        return {"apikey": self.key, "Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
+        h = {"apikey": self.key, "Content-Type": "application/json"}
+        if not self.key.startswith("sb_"):  # 예전 service_role(JWT) 키만 Bearer 헤더도 필요
+            h["Authorization"] = f"Bearer {self.key}"
+        return h
 
     # ---- 규칙·시세 ----
     def loan_products(self) -> tuple[list[dict], str]:
@@ -48,7 +51,15 @@ class Repo:
             rows = r.json()
             if rows:
                 return [{**row, "monthly": {"deposit": row["monthly_deposit"], "rent": row["monthly_rent"]}} for row in rows]
+        # 수집기(collect.prices)가 만든 실데이터가 있으면 그걸, 없으면 예시 시세를 써요.
+        if (DATA / "regions_real.json").exists():
+            return _load("regions_real.json")["regions"]
         return _load("regions.json")["regions"]
+
+    def regions_meta(self) -> dict:
+        name = "regions_real.json" if (DATA / "regions_real.json").exists() else "regions.json"
+        d = _load(name)
+        return {k: v for k, v in d.items() if k != "regions"}
 
     def companies(self) -> list[dict]:
         return _load("companies.json")["places"]

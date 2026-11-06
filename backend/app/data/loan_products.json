@@ -1,6 +1,6 @@
 {
-  "effective_date": "2026-10-01",
-  "note": "2026.10 공개 자료를 정리한 값이에요. 공모전 제출·서비스 전 주택도시기금·한국주택금융공사 공식 자료로 다시 확인해야 해요.",
+  "effective_date": "2026-10-19",
+  "note": "공공 주거포털(서울주거포털·경기주거복지포털)과 보도(한경, 2026.9.28)로 확인한 값이에요. verified=false 항목은 공식 원문을 아직 못 찾은 값이라 제출 전 확인이 필요해요.",
   "products": [
     {
       "id": "didimdol_newlywed",
@@ -9,13 +9,14 @@
       "channel": "은행 창구",
       "tenure": "buy",
       "marital": "newlywed",
+      "requires_first_home": true,
       "income_max": 8500,
       "net_asset_max": 51100,
       "price_max": 60000,
       "limit": { "default": 32000 },
-      "ltv": { "default": 0.7, "first_home": 0.8 },
+      "ltv": { "capital": 0.7, "other": 0.8 },
       "repay_ratio": 0.6,
-      "rate": { "min": 2.85, "max": 4.15 },
+      "rate": { "min": 2.55, "max": 3.85 },
       "preferential": [
         { "label": "신혼가구 우대", "value": 0.2, "auto": "newlywed" },
         { "label": "생애최초 우대", "value": 0.2, "auto": "first_home" },
@@ -23,26 +24,12 @@
       ],
       "rate_floor": 1.5,
       "apply": { "label": "주택도시기금에서 신청하기", "url": "https://enhuf.molit.go.kr", "site": "기금e든든" },
-      "verified": false
-    },
-    {
-      "id": "didimdol_first",
-      "name": "디딤돌 생애최초",
-      "org": "주택도시기금",
-      "channel": "은행 창구",
-      "tenure": "buy",
-      "marital": "any",
-      "income_max": 7000,
-      "net_asset_max": 51100,
-      "price_max": 50000,
-      "limit": { "default": 24000 },
-      "ltv": { "default": 0.8 },
-      "repay_ratio": 0.6,
-      "rate": { "min": 2.85, "max": 4.15 },
-      "preferential": [],
-      "rate_floor": 1.5,
-      "apply": { "label": "주택도시기금에서 신청하기", "url": "https://enhuf.molit.go.kr", "site": "기금e든든" },
-      "verified": false
+      "sources": [
+        { "title": "서울주거포털 · 신혼부부전용 구입자금", "url": "https://housing.seoul.go.kr/site/main/content/sh01_070500", "checked": "2026-11-03",
+          "fields": ["income_max", "net_asset_max", "limit", "ltv", "repay_ratio", "rate", "requires_first_home"] }
+      ],
+      "unverified_fields": ["price_max", "preferential"],
+      "verified": true
     },
     {
       "id": "bogeumjari",
@@ -53,18 +40,26 @@
       "marital": "any",
       "income_max": 7000,
       "income_max_newlywed": 8500,
+      "income_single_max_newlywed": 7000,
       "net_asset_max": null,
       "price_max": 60000,
       "limit": { "default": 36000, "first_home": 42000 },
       "ltv": { "default": 0.7, "first_home": 0.8 },
       "repay_ratio": 0.6,
-      "rate": { "min": 4.9, "max": 5.2 },
+      "rate": { "min": 3.95, "max": 4.25 },
       "preferential": [
-        { "label": "신혼가구 우대 (합산 7,000만 이하)", "value": 0.3, "auto": "newlywed_low_income" }
+        { "label": "신혼가구 우대", "value": 0.2, "auto": "newlywed" }
       ],
       "rate_floor": null,
       "apply": { "label": "한국주택금융공사에서 신청하기", "url": "https://www.hf.go.kr", "site": "한국주택금융공사" },
-      "verified": false
+      "sources": [
+        { "title": "경기주거복지포털 · 보금자리론", "url": "https://housing.gg.go.kr/html/24217.do", "checked": "2026-11-03",
+          "fields": ["income_max", "income_max_newlywed", "price_max", "limit", "rate", "preferential"] },
+        { "title": "한경비즈니스 · 보금자리론 제도 개선 (2026.10.19 시행)", "url": "https://magazine.hankyung.com/business/article/202609289898b", "checked": "2026-11-03",
+          "fields": ["income_single_max_newlywed"] }
+      ],
+      "unverified_fields": ["ltv", "repay_ratio"],
+      "verified": true
     },
     {
       "id": "beotimmok_newlywed",
@@ -74,15 +69,30 @@
       "tenure": "jeonse",
       "marital": "newlywed",
       "income_max": 7500,
-      "net_asset_max": 34500,
+      "net_asset_max": 33700,
       "deposit_max": { "capital": 40000, "other": 30000 },
       "limit": { "capital": 25000, "other": 16000 },
       "deposit_ratio": 0.8,
       "repay_ratio": 0.4,
       "rate": { "min": 1.9, "max": 3.3 },
-      "preferential": [],
+      "rate_table": {
+        "income_bands": [2000, 4000, 6000, 7500],
+        "deposit_bands": [5000, 10000, 15000],
+        "rates": [[1.9, 2.0, 2.1, 2.2], [2.2, 2.3, 2.4, 2.5], [2.6, 2.7, 2.8, 2.9], [3.0, 3.1, 3.2, 3.3]],
+        "non_capital_discount": 0.2
+      },
+      "preferential": [
+        { "label": "1자녀 우대", "value": 0.3, "auto": null },
+        { "label": "신청액이 심사금액의 30% 이하", "value": 0.2, "auto": null }
+      ],
+      "rate_floor": 1.0,
       "apply": { "label": "주택도시기금에서 신청하기", "url": "https://enhuf.molit.go.kr", "site": "기금e든든" },
-      "verified": false
+      "sources": [
+        { "title": "경기주거복지포털 · 신혼부부전용 전세자금대출", "url": "https://housing.gg.go.kr/html/24205.do", "checked": "2026-11-03",
+          "fields": ["income_max", "net_asset_max", "deposit_max", "limit", "deposit_ratio", "rate_table", "preferential"] }
+      ],
+      "unverified_fields": ["repay_ratio"],
+      "verified": true
     },
     {
       "id": "hf_jeonse_guarantee",
@@ -100,7 +110,9 @@
       "rate": { "min": 3.6, "max": 4.6 },
       "rate_label": "은행별",
       "preferential": [],
-      "apply": { "label": "한국주택금융공사에서 확인하기", "url": "https://www.hf.go.kr", "site": "한국주택금융공사" },
+      "apply": { "label": "한국주택금융공사에서 확인하기", "url": "https://www.hf.go.kr/ko/sub02/sub02_01_02.do", "site": "한국주택금융공사" },
+      "sources": [],
+      "unverified_fields": ["limit", "deposit_ratio", "rate"],
       "verified": false
     }
   ]

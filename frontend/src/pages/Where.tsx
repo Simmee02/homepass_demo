@@ -1,26 +1,78 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { Cta, StepHeader } from '../components/ui';
+import RealMap, { type MapCircle, type MapPin } from '../components/RealMap';
 import { useStore, type PersonState } from '../store';
 import type { Place } from '../types';
 
 const MINUTES = [30, 45, 60, 90];
+/** 서버(backend/app/engine/commute.py)와 같은 추정식: 도보·대기 10분 + 직선 1km당 3분 */
+const reachKm = (min: number) => Math.max(0.5, (min - 10) / 3);
 const label = (m: number) => (m === 90 ? '1.5시간' : m === 60 ? '1시간' : `${m}분`);
+
+const RECENT_KEY = 'homepass-recent-places';
+const readRecent = (): Place[] => {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]'); } catch { return []; }
+};
+const writeRecent = (list: Place[]) => {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 5))); } catch { /* 저장소를 못 쓰는 환경 */ }
+};
 
 function CompanySearch({ onPick }: { onPick: (p: Place) => void }) {
   const [q, setQ] = useState('');
   const [list, setList] = useState<Place[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [recent, setRecent] = useState<Place[]>(readRecent);
+
   useEffect(() => {
-    const t = setTimeout(() => { api.companies(q).then((r) => setList(r.places)).catch(() => setList([])); }, 200);
+    const query = q.trim();
+    if (query.length < 2) { setList([]); setLoading(false); return; }
+    setLoading(true);
+    const t = setTimeout(() => {
+      api.companies(query).then((r) => setList(r.places)).catch(() => setList([])).finally(() => setLoading(false));
+    }, 350);
     return () => clearTimeout(t);
   }, [q]);
+
+  const pick = (p: Place) => {
+    const next = [p, ...recent.filter((r) => !(r.name === p.name && r.address === p.address))];
+    writeRecent(next);
+    setRecent(next.slice(0, 5));
+    onPick(p);
+  };
+  const remove = (p: Place) => {
+    const next = recent.filter((r) => r !== p);
+    writeRecent(next);
+    setRecent(next);
+  };
+
+  const query = q.trim();
   return (
     <div className="search">
-      <input autoFocus placeholder="회사 이름이나 주소로 검색" value={q} onChange={(e) => setQ(e.target.value)} />
-      {list.slice(0, 4).map((p) => (
-        <button key={p.name} className="result" onClick={() => onPick(p)}><b>{p.name}</b><span>{p.address}</span></button>
-      ))}
+      <input autoFocus placeholder="회사 이름이나 주소로 검색" value={q} onFocus={() => setRecent(readRecent())} onChange={(e) => setQ(e.target.value)} />
+      {query.length >= 2 ? (
+        <>
+          {list.slice(0, 5).map((p) => (
+            <button key={`${p.name}-${p.lat}`} className="result" onClick={() => pick(p)}><b>{p.name}{p.kind === 'area' && <em className="area-tag">동네</em>}</b><span>{p.address}</span></button>
+          ))}
+          {!loading && list.length === 0 && <span className="hint" style={{ padding: '4px 2px' }}>검색 결과가 없어요. 회사 이름이나 도로명 주소로 다시 검색해 보세요.</span>}
+          {loading && <span className="hint" style={{ padding: '4px 2px' }}>찾는 중…</span>}
+        </>
+      ) : recent.length > 0 && (
+        <div className="recent">
+          <div className="recent-head"><span>최근 검색</span><button onClick={() => { writeRecent([]); setRecent([]); }}>전체 삭제</button></div>
+          {recent.map((p) => (
+            <div key={`${p.name}-${p.lat}`} className="recent-item">
+              <button className="recent-pick" onClick={() => pick(p)}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="#A9AFBD" strokeWidth="1.5" /><path d="M8 4.5V8l2.5 1.5" stroke="#A9AFBD" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                <span><b>{p.name}</b><small>{p.address}</small></span>
+              </button>
+              <button className="recent-del" aria-label={`${p.name} 기록 삭제`} onClick={() => remove(p)}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -62,30 +114,16 @@ function PersonCard({ p, i }: { p: PersonState; i: 0 | 1 }) {
   );
 }
 
-/** 두 회사 좌표와 통근 범위를 단순 투영해서 그려요. 실제 서비스는 카카오맵 SDK로 바꿔요. */
+/** 실제 지도 위에 회사 위치와 통근 가능 범위(직선거리 기준 추정)를 그려요. */
 function MapPreview({ people }: { people: PersonState[] }) {
   const pts = people.filter((p) => p.company);
+  const pins = useMemo<MapPin[]>(() => pts.map((p) => ({ id: p.label, lat: p.company!.lat, lng: p.company!.lng, color: p.color, label: p.company!.name })), [pts.map((p) => `${p.company?.name}${p.label}`).join()]);
+  const circles = useMemo<MapCircle[]>(() => pts.map((p) => ({ id: p.label, lat: p.company!.lat, lng: p.company!.lng, color: p.color, radiusKm: reachKm(p.maxCommute) })), [pts.map((p) => `${p.company?.name}${p.maxCommute}`).join()]);
   if (!pts.length) return null;
-  const W = 342, H = 140, KM = 6.5; // 1km ≈ 6.5px
-  const cLat = pts.reduce((a, p) => a + p.company!.lat, 0) / pts.length;
-  const cLng = pts.reduce((a, p) => a + p.company!.lng, 0) / pts.length;
-  const proj = (lat: number, lng: number) => ({ x: W / 2 + (lng - cLng) * 88.2 * KM, y: H / 2 - (lat - cLat) * 111 * KM });
   return (
-    <div style={{ position: 'relative', height: H, borderRadius: 8, overflow: 'hidden', background: '#EEF1F5' }}>
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-label="통근 범위 지도">
-        <path d="M0 95c60-18 110-8 170 8s120 16 172-6" stroke="#CFE3F4" strokeWidth="12" fill="none" />
-        <path d="M40 0 62 150M150 0l-14 150M250 0l24 150M0 45h342M0 128h342" stroke="#fff" strokeWidth="5" fill="none" />
-        {pts.map((p) => {
-          const { x, y } = proj(p.company!.lat, p.company!.lng);
-          const r = Math.max(8, ((p.maxCommute - 8) / 2.3) * KM);
-          return <circle key={p.label} cx={x} cy={y} r={r} fill={p.color} fillOpacity=".1" stroke={p.color} strokeWidth="1.5" strokeDasharray="4 4" />;
-        })}
-        {pts.map((p) => {
-          const { x, y } = proj(p.company!.lat, p.company!.lng);
-          return <g key={p.label + 'pin'} transform={`translate(${x - 12} ${y - 26})`}><path d="M12 0C5 0 0 5 0 11c0 8 12 19 12 19s12-11 12-19C24 5 19 0 12 0Z" fill={p.color} /><circle cx="12" cy="11" r="4" fill="#fff" /></g>;
-        })}
-      </svg>
-      <span style={{ position: 'absolute', left: 10, bottom: 10, background: '#1E2230', color: '#fff', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 700 }}>두 원이 겹치는 곳이 후보 동네예요</span>
+    <div style={{ position: 'relative' }}>
+      <RealMap pins={pins} circles={circles} height={220} />
+      <span style={{ position: 'absolute', left: 10, bottom: 10, zIndex: 500, background: '#1E2230', color: '#fff', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 700 }}>두 원이 겹치는 곳이 후보 동네예요 · 대중교통 추정</span>
     </div>
   );
 }

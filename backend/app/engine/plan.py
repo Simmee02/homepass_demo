@@ -54,7 +54,7 @@ def build_option(tenure: str, region: dict, products: list[dict], base: dict) ->
     ctx = Ctx(
         combined_income=base["income"], net_asset=saved, marriage=base["marriage"],
         first_home=base["first_home"], homeless=base["homeless"],
-        existing_loan_monthly=base["existing"], price=price, capital=region["capital"],
+        existing_loan_monthly=base["existing"], price=price, capital=region["capital"], incomes=base["incomes"],
     )
     loans = [evaluate(p, ctx) for p in products if p["tenure"] == tenure]
     loans.sort(key=lambda l: (l["status"] == "no", -l["amount"]))
@@ -97,12 +97,13 @@ def make_plan(inp: dict, regions: list[dict], products: list[dict], effective_da
     saving = estimate_monthly_saving(income) if estimated else inp["monthly_saving"]
     base = dict(months=months, saving=saving, saved=inp["saved"], income=income, marriage=inp["marriage"],
                 first_home=inp.get("first_home", True), homeless=inp.get("homeless", True),
-                existing=inp.get("existing_loan_monthly", 0))
+                existing=inp.get("existing_loan_monthly", 0), incomes=tuple(p["income"] for p in people))
 
     out = []
     for r in candidate_regions(regions, people):
         opts = {t: build_option(t, r, products, base) for t in ("jeonse", "monthly", "buy")}
-        out.append(dict(id=r["id"], name=r["name"], lat=r["lat"], lng=r["lng"], commute=r["commute"], options=opts))
+        out.append(dict(id=r["id"], name=r["name"], lat=r["lat"], lng=r["lng"], commute=r["commute"],
+                        commute_provider=r.get("commute_provider", "estimate"), options=opts))
     rank = {"여유": 0, "가능": 1, "빠듯": 2}
     out.sort(key=lambda r: (min(rank[o["grade"]] for k, o in r["options"].items() if k != "monthly"),
                             sum(r["commute"].values())))
